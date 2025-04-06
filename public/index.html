@@ -7,7 +7,9 @@
   <style>
     body {
       font-family: 'Inter', sans-serif;
-      background: #f2f6ff;
+      background: linear-gradient(135deg, #e0e7ff, #c7d2fe, #a5b4fc);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -15,17 +17,31 @@
       margin: 0;
     }
 
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
     .card {
       background: #ffffff;
       padding: 40px;
-      border-radius: 16px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      border-radius: 20px;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
       width: 100%;
       max-width: 420px;
+      text-align: center;
+      position: relative;
+    }
+
+    .welcome {
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 20px;
     }
 
     h2 {
-      text-align: center;
       margin-bottom: 24px;
       color: #2b2f4a;
     }
@@ -35,6 +51,7 @@
       margin-top: 16px;
       color: #333;
       font-weight: 600;
+      text-align: left;
     }
 
     input[type="text"],
@@ -45,6 +62,12 @@
       border: 1px solid #ccc;
       border-radius: 8px;
       font-size: 14px;
+      transition: border-color 0.3s ease;
+    }
+
+    input:focus {
+      border-color: #4f46e5;
+      outline: none;
     }
 
     button {
@@ -58,29 +81,64 @@
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      transition: background-color 0.3s ease;
+      transition: background-color 0.3s ease, transform 0.2s ease;
     }
 
     button:hover {
       background-color: #3730a3;
+      transform: scale(1.02);
+    }
+
+    .success-message {
+      display: none;
+      margin-top: 20px;
+      color: green;
+      font-weight: bold;
+      animation: fadeIn 1s ease-in-out forwards;
+    }
+
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(-10px); }
+      100% { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
 <body>
   <div class="card">
+    <div class="welcome">Welcome to Shubh Enclave</div>
     <h2>Upload Image</h2>
-    <form action="/upload" method="POST" enctype="multipart/form-data">
+    <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data" autocomplete="off">
       <label for="flatNumber">Flat Number:</label>
-      <input type="text" id="flatNumber" name="flatNumber" required>
+      <input type="text" id="flatNumber" name="flatNumber" autocomplete="off" required>
 
       <label for="personName">Person Name:</label>
-      <input type="text" id="personName" name="personName" required>
+      <input type="text" id="personName" name="personName" autocomplete="off" required>
 
       <label for="image">Upload Image (jpg/png/heic):</label>
       <input type="file" id="image" name="image" accept=".jpg,.jpeg,.png,.heic" required>
 
       <button type="submit">Upload</button>
     </form>
+    <div id="successMessage" class="success-message">✅ Upload successful!</div>
   </div>
+
+  <script>
+    // Focus first input on load
+    window.onload = () => {
+      document.getElementById("flatNumber").focus();
+
+      // Check if redirected with ?success=true
+      if (window.location.search.includes("success=true")) {
+        const msg = document.getElementById("successMessage");
+        msg.style.display = "block";
+        setTimeout(() => msg.style.display = "none", 3000);
+      }
+    };
+
+    // Auto-select field text on focus
+    document.querySelectorAll('input[type="text"]').forEach(input => {
+      input.addEventListener("focus", () => input.select());
+    });
+  </script>
 </body>
 </html>

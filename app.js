@@ -30,7 +30,7 @@ const upload = multer({ storage });
 const DATA_FILE = 'data.json';
 if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, '[]');
 
-// 📥 Upload Route
+// 📅 Upload Route
 app.post('/upload', upload.single('image'), (req, res) => {
   const { flatNumber, personName } = req.body;
   const imagePath = req.file.path;
@@ -59,6 +59,9 @@ app.get('/admin', (req, res) => {
       th, td { padding: 12px; border: 1px solid #ccc; text-align: left; }
       th { background-color: #f2f2f2; }
       body { font-family: Arial, sans-serif; margin: 20px; }
+      .btn { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; font-weight: bold; }
+      .btn-download { background-color: #007bff; color: white; }
+      .btn-delete { background-color: #dc3545; color: white; }
     </style>
     <h2>Uploaded Records</h2>
     <table>
@@ -66,7 +69,7 @@ app.get('/admin', (req, res) => {
         <th>Date</th>
         <th>Person Name</th>
         <th>Flat Number</th>
-        <th>Download PDF</th>
+        <th>Actions</th>
       </tr>
   `;
 
@@ -79,13 +82,40 @@ app.get('/admin', (req, res) => {
         <td>${formattedDate}</td>
         <td>${d.personName}</td>
         <td>${d.flatNumber}</td>
-        <td><a href="/generated_pdfs/${pdfName}" target="_blank">Download</a></td>
+        <td>
+          <a class="btn btn-download" href="/generated_pdfs/${pdfName}" target="_blank">Download</a>
+          <a class="btn btn-delete" href="/delete/${timestamp}" onclick="return confirm('Delete this record?')">Delete</a>
+        </td>
       </tr>
     `;
   });
 
   html += '</table>';
   res.send(html);
+});
+
+// ❌ Delete Entry Route
+app.get('/delete/:timestamp', (req, res) => {
+  const timestamp = req.params.timestamp;
+  let data = JSON.parse(fs.readFileSync(DATA_FILE));
+
+  const recordToDelete = data.find(d => path.basename(d.imagePath).startsWith(timestamp));
+  if (recordToDelete) {
+    if (fs.existsSync(recordToDelete.imagePath)) {
+      fs.unlinkSync(recordToDelete.imagePath);
+    }
+
+    const pdfName = `${timestamp}-${recordToDelete.personName}.pdf`;
+    const pdfPath = path.join(__dirname, 'generated_pdfs', pdfName);
+    if (fs.existsSync(pdfPath)) {
+      fs.unlinkSync(pdfPath);
+    }
+
+    data = data.filter(d => path.basename(d.imagePath).split('-')[0] !== timestamp);
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+  }
+
+  res.redirect('/admin');
 });
 
 // 📄 Generate PDF
@@ -113,11 +143,10 @@ function generatePDF(record, filePath, callback) {
     align: 'center',
   });
 
-  // Move signature to the bottom of the page
   const signaturePath = path.join(__dirname, 'assets/signature.png');
   if (fs.existsSync(signaturePath)) {
     const pageHeight = doc.page.height;
-    const bottomY = pageHeight - 120; // push it near the bottom
+    const bottomY = pageHeight - 120;
 
     doc.image(signaturePath, 50, bottomY, { width: 100 });
     doc.text('Chairman Signature', 160, bottomY + 30);
